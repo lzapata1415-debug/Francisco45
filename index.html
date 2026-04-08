@@ -388,24 +388,68 @@ async function apiPOST(cuerpo) { const resp = await fetch(API_URL, { method:'POS
 async function loginUsuario(email, codigo, nombre) {
   mostrarSpinner();
   try {
+    // Primero validar si el código existe
     const res = await apiGET({ accion: 'validar', codigo, email });
+    
+    // Si el código no existe (mensaje exacto del Apps Script)
     if (!res.success && res.message === 'Código de acceso inválido.') {
+      // Registrar nuevo usuario
       const reg = await apiGET({ accion: 'registrar', codigo, email, nombre });
-      if (!reg.success) { toast(reg.message, 'error'); return false; }
-      sesion = { email, nombre: nombre || email.split('@')[0], codigo, tipo_juego: 'digital', puntos: 0, completados: [], fotos: [] };
-      guardarSesion(); return true;
+      if (!reg.success) {
+        toast(reg.message, 'error');
+        return false;
+      }
+      // Crear sesión con datos por defecto
+      sesion = {
+        email: email,
+        nombre: nombre || email.split('@')[0],
+        codigo: codigo,
+        tipo_juego: 'digital',
+        puntos: 0,
+        completados: [],
+        fotos: []
+      };
+      guardarSesion();
+      toast('Usuario registrado correctamente', 'success');
+      return true;
     }
-    if (!res.success) { toast(res.message, 'error'); return false; }
+    
+    // Si hay otro error (por ejemplo, correo no coincide)
+    if (!res.success) {
+      toast(res.message, 'error');
+      return false;
+    }
+    
+    // Código existe y correo coincide
     if (res.data && res.data.existe === true) {
-      sesion = { email, nombre: nombre || res.data.nombre, codigo, tipo_juego: res.data.tipo_juego || 'digital', puntos: res.data.puntos || 0, completados: [], fotos: [] };
+      sesion = {
+        email: email,
+        nombre: nombre || res.data.nombre || email.split('@')[0],
+        codigo: codigo,
+        tipo_juego: res.data.tipo_juego || 'digital',
+        puntos: res.data.puntos || 0,
+        completados: [],
+        fotos: []
+      };
+      // Cargar progreso existente
       const prog = await apiGET({ accion: 'obtener_progreso', email });
-      if (prog.success) { sesion.completados = prog.data.completados || []; sesion.fotos = prog.data.fotos || []; }
-      guardarSesion(); return true;
+      if (prog.success) {
+        sesion.completados = prog.data.completados || [];
+        sesion.fotos = prog.data.fotos || [];
+      }
+      guardarSesion();
+      return true;
     }
+    
     toast('No se pudo iniciar sesión.', 'error');
     return false;
-  } catch(e) { toast('Error de conexión', 'error'); return false; }
-  finally { ocultarSpinner(); }
+  } catch(e) {
+    console.error(e);
+    toast('Error de conexión con el servidor', 'error');
+    return false;
+  } finally {
+    ocultarSpinner();
+  }
 }
 function guardarSesion() { localStorage.setItem('gesta_sesion', JSON.stringify(sesion)); }
 function iniciarApp() {
@@ -501,13 +545,21 @@ document.getElementById('btn-abrir-login').addEventListener('click', ()=> {
 document.getElementById('btn-cerrar-modal').addEventListener('click', ()=> {
   document.getElementById('modal-login').classList.add('hidden');
 });
-document.getElementById('btn-login').addEventListener('click', async ()=> {
+document.getElementById('btn-login').addEventListener('click', async () => {
   const email = document.getElementById('input-email').value.trim();
   const codigo = document.getElementById('input-codigo').value.trim();
   const nombre = document.getElementById('input-nombre').value.trim();
-  if(!email || !codigo) { toast('Completa correo y código.', 'error'); return; }
+  if (!email || !codigo) {
+    toast('Completa correo y código.', 'error');
+    return;
+  }
+  console.log("Intentando login con:", email, codigo, nombre);
   const ok = await loginUsuario(email, codigo, nombre);
-  if(ok) iniciarApp();
+  if (ok) {
+    iniciarApp();
+  } else {
+    console.log("Login falló");
+  }
 });
 
 // Inicializar si hay sesión guardada (se salta la landing y va directo a la app)
