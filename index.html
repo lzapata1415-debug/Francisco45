@@ -348,7 +348,7 @@
 </div>
 
 <script>
-// ==================== CONFIGURACIÓN (tus URLs reales) ====================
+// ==================== CONFIGURACIÓN CORRECTA ====================
 const API_URL = 'https://script.google.com/macros/s/AKfycbxcJZlDKUk4iNnruitifJM7cAumZa9Awh91t-403AaypoN_kJoQ5TxoetQNiScuDxVapQ/exec';
 const SPREADSHEET_ID = '1w5IegwChoc8GI2VTCK9btN1Z29Jj1O-j0xo8xjN7hTo';
 const URL_RETOS    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1340299651`;
@@ -370,10 +370,6 @@ let retoActual = null, cartaActual = null, fotoBase64 = null;
 function mostrarSpinner(texto = 'Cargando...') {
   const sp = document.getElementById('spinner');
   if (sp) sp.classList.remove('hidden');
-}
-function ocultarSpinner() {
-  const sp = document.getElementById('spinner');
-  if (sp) sp.classList.add('hidden');
 }
 function ocultarSpinner() {
   const sp = document.getElementById('spinner');
@@ -424,14 +420,13 @@ async function apiPOST(cuerpo) {
   return resp.json();
 }
 
-// ========== SESIÓN Y LOGIN (con auto-registro) ==========
+// ========== SESIÓN Y LOGIN ==========
 function guardarSesion() { localStorage.setItem('gesta_sesion', JSON.stringify(sesion)); }
 
 async function loginUsuario(email, codigo, nombre) {
   mostrarSpinner('Verificando...');
   try {
     const res = await apiGET({ accion: 'validar', codigo, email });
-    // Si el código no existe
     if (!res.success && res.message === 'Código de acceso inválido.') {
       const reg = await apiGET({ accion: 'registrar', codigo, email, nombre });
       if (!reg.success) {
@@ -450,12 +445,10 @@ async function loginUsuario(email, codigo, nombre) {
       guardarSesion();
       return true;
     }
-    // Otro error (correo no coincide, etc.)
     if (!res.success) {
       toast(res.message, 'error');
       return false;
     }
-    // Código existe y correo coincide
     if (res.data && res.data.existe === true) {
       sesion = {
         email: email,
@@ -828,12 +821,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 });
-</script>
-  // Activar menú horizontal
+
+// ========== ACTIVAR MENÚ HORIZONTAL (añadido) ==========
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const seccion = btn.getAttribute('data-seccion');
     if (seccion) irASeccion(seccion);
   });
+});
+</script>
 </body>
 </html>
